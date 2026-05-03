@@ -3,7 +3,7 @@ model_sources:
   - name: "百炼千问"
     provider: "openai_compatible"
     base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    api_key: "sk-xxx"
+    api_key: "sk-3edaf085000c4a65bf4770519d86c930"
     model_name: "qwen-plus"
     is_active: true
 
