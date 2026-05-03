@@ -51,3 +51,44 @@ async def test_trend_interpreter_handles_json_with_markdown_fence():
 
     assert result.trend_profile is not None
     assert result.trend_profile.core_event == "test"
+
+
+from src.agents.strategy_planner import StrategyPlanner
+from src.storage.models import PlatformStrategy
+
+
+@pytest.mark.asyncio
+async def test_strategy_planner_creates_strategies():
+    response = json.dumps({
+        "xiaohongshu": {
+            "angle": "职场效率",
+            "audience": "25-35白领",
+            "structure": {"hook": "痛点", "body": "案例", "cta": "关注"},
+            "emotion_hook": "焦虑→希望",
+        },
+        "wechat": {
+            "angle": "深度分析",
+            "audience": "知识工作者",
+            "structure": {"hook": "数据", "body": "论证", "cta": "思考"},
+            "emotion_hook": "好奇→认同",
+        },
+    }, ensure_ascii=False)
+    provider = mock_provider(response)
+    agent = StrategyPlanner(provider, prompt_dir="config/prompts")
+
+    state = PipelineState(
+        trend_markdown="test",
+        platforms=["xiaohongshu", "wechat"],
+        trend_profile=TrendProfile(
+            core_event="AI爆发",
+            key_data=["GPT-5"],
+            sentiment="期待",
+            angles=["技术", "职场"],
+        ),
+    )
+    result = await agent.run(state)
+
+    assert "xiaohongshu" in result.strategies
+    assert "wechat" in result.strategies
+    assert result.strategies["xiaohongshu"].angle == "职场效率"
+    assert result.metrics.agents[-1].agent_name == "strategy_planner"
