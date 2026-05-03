@@ -1,3 +1,6 @@
+from pathlib import Path
+
+import yaml
 from pydantic import BaseModel, Field
 
 
@@ -61,3 +64,47 @@ class PipelineState(BaseModel):
 
     # Metrics
     metrics: PipelineMetrics = Field(default_factory=PipelineMetrics)
+
+
+class ModelSource(BaseModel):
+    """Configuration for a single model provider."""
+    name: str
+    provider: str = "openai_compatible"
+    base_url: str
+    api_key: str
+    model_name: str
+    is_active: bool = False
+
+
+class ReviewConfig(BaseModel):
+    """Quality review thresholds."""
+    score_threshold: int = 85
+    max_cycles: int = 2
+
+
+class AppConfig(BaseModel):
+    """Top-level application configuration."""
+    model_sources: list[ModelSource] = Field(default_factory=list)
+    active_source: str = ""
+    review: ReviewConfig = Field(default_factory=ReviewConfig)
+    default_platforms: list[str] = Field(
+        default_factory=lambda: ["xiaohongshu", "wechat", "douyin"]
+    )
+
+
+def load_config(config_path: str = "config/config.yaml") -> AppConfig:
+    """Load app config from YAML file."""
+    path = Path(config_path)
+    if not path.exists():
+        return AppConfig()
+    with open(path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    return AppConfig(**data)
+
+
+def save_config(config: AppConfig, config_path: str = "config/config.yaml"):
+    """Save app config to YAML file."""
+    path = Path(config_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        yaml.dump(config.model_dump(), f, allow_unicode=True, default_flow_style=False)

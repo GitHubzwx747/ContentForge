@@ -1,0 +1,26 @@
+# config/config.yaml
+model_sources:
+  - name: "百炼千问"
+    provider: "openai_compatible"
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    api_key: "sk-xxx"
+    model_name: "qwen-plus"
+    is_active: true
+
+  - name: "DeepSeek"
+    provider: "openai_compatible"
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "sk-yyy"
+    model_name: "deepseek-chat"
+    is_active: false
+
+active_source: "百炼千问"
+
+review:
+  score_threshold: 85
+  max_cycles: 2
+
+default_platforms:
+  - xiaohongshu
+  - wechat
+  - douyin
