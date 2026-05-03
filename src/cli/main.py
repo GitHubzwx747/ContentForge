@@ -32,16 +32,23 @@ def get_active_provider(config: AppConfig) -> ModelProvider:
 
 @app.command()
 def generate(
-    input: str = typer.Argument(..., help="Path to trend markdown file"),
+    input: str = typer.Argument(None, help="Path to trend markdown file, or inline text"),
     platforms: str = typer.Option("xiaohongshu,wechat,douyin", help="Comma-separated platform list"),
+    text: str = typer.Option(None, "--text", "-t", help="Direct text input (alternative to file path)"),
 ):
-    """Generate content from trend markdown."""
-    input_path = Path(input)
-    if not input_path.exists():
-        console.print(f"[red]File not found: {input}[/red]")
+    """Generate content from trend markdown file or direct text."""
+    if text:
+        trend_markdown = text
+    elif input:
+        input_path = Path(input)
+        if input_path.exists():
+            trend_markdown = input_path.read_text(encoding="utf-8")
+        else:
+            # Treat as inline text
+            trend_markdown = input
+    else:
+        console.print("[red]Please provide a file path or use --text to input content.[/red]")
         raise typer.Exit(1)
-
-    trend_markdown = input_path.read_text(encoding="utf-8")
     platform_list = [p.strip() for p in platforms.split(",")]
 
     config = get_config()
@@ -237,7 +244,8 @@ def main(ctx: typer.Context):
         if user_input == "/help":
             console.print("""
 可用命令:
-  /generate <文件路径> [--platforms x,y,z]  生成文案
+  /generate <文件路径> [--platforms x,y,z]  从文件生成文案
+  /generate --text <文案内容>               直接输入文字生成文案
   /model list                               查看模型源
   /model use <名称>                         切换模型源
   /history                                  查看生成历史
@@ -252,17 +260,28 @@ def main(ctx: typer.Context):
             continue
 
         if user_input.startswith("/generate"):
-            parts = user_input.split()
+            parts = user_input.split(maxsplit=1)
             if len(parts) < 2:
-                console.print("[red]用法: /generate <文件路径>[/red]")
+                console.print("[red]用法: /generate <文件路径> 或 /generate --text <内容>[/red]")
                 continue
-            file_path = parts[1]
+            arg = parts[1]
             platforms = "xiaohongshu,wechat,douyin"
-            for part in parts[2:]:
-                if part.startswith("--platforms="):
-                    platforms = part.split("=", 1)[1]
+            text_content = None
+            file_path = None
+
+            # Parse --text and --platforms
+            if arg.startswith("--text ") or arg.startswith("-t "):
+                text_content = arg.split(" ", 1)[1]
+            else:
+                # Extract file path (first token) and options
+                arg_parts = arg.split()
+                file_path = arg_parts[0]
+                for part in arg_parts[1:]:
+                    if part.startswith("--platforms="):
+                        platforms = part.split("=", 1)[1]
+
             try:
-                generate(input=file_path, platforms=platforms)
+                generate(input=file_path, platforms=platforms, text=text_content)
             except Exception as e:
                 console.print(f"[red]Error: {e}[/red]")
             continue
