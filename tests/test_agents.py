@@ -119,3 +119,24 @@ async def test_content_writer_creates_drafts():
     assert "xiaohongshu" in result.drafts
     assert "正文内容" in result.drafts["xiaohongshu"]
     assert result.metrics.agents[-1].agent_name == "content_writer"
+
+
+from src.agents.quality_reviewer import QualityReviewer
+
+
+@pytest.mark.asyncio
+async def test_quality_reviewer_scores_drafts():
+    response = json.dumps({"score": 92, "feedback": "整体不错，标题可以更吸引人"}, ensure_ascii=False)
+    provider = mock_provider(response)
+    agent = QualityReviewer(provider, prompt_dir="config/prompts")
+
+    state = PipelineState(
+        trend_markdown="test",
+        platforms=["xiaohongshu"],
+        drafts={"xiaohongshu": "# 标题\n正文内容"},
+    )
+    result = await agent.run(state)
+
+    assert result.review_scores["xiaohongshu"] == 92
+    assert "不错" in result.review_feedback["xiaohongshu"]
+    assert result.metrics.agents[-1].agent_name == "quality_reviewer"
