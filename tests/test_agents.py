@@ -92,3 +92,30 @@ async def test_strategy_planner_creates_strategies():
     assert "wechat" in result.strategies
     assert result.strategies["xiaohongshu"].angle == "职场效率"
     assert result.metrics.agents[-1].agent_name == "strategy_planner"
+
+
+from src.agents.content_writer import ContentWriter
+
+
+@pytest.mark.asyncio
+async def test_content_writer_creates_drafts():
+    provider = mock_provider("# AI改变生活\n\n正文内容...")
+    agent = ContentWriter(provider, prompt_dir="config/prompts")
+
+    state = PipelineState(
+        trend_markdown="test",
+        platforms=["xiaohongshu"],
+        strategies={
+            "xiaohongshu": PlatformStrategy(
+                angle="职场效率",
+                audience="白领",
+                structure={"hook": "痛点", "body": "案例", "cta": "关注"},
+                emotion_hook="焦虑→希望",
+            ),
+        },
+    )
+    result = await agent.run(state)
+
+    assert "xiaohongshu" in result.drafts
+    assert "正文内容" in result.drafts["xiaohongshu"]
+    assert result.metrics.agents[-1].agent_name == "content_writer"
