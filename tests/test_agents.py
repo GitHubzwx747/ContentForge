@@ -140,3 +140,30 @@ async def test_quality_reviewer_scores_drafts():
     assert result.review_scores["xiaohongshu"] == 92
     assert "不错" in result.review_feedback["xiaohongshu"]
     assert result.metrics.agents[-1].agent_name == "quality_reviewer"
+
+
+from src.agents.final_polisher import FinalPolisher
+
+
+@pytest.mark.asyncio
+async def test_final_polisher_produces_final_content():
+    response = json.dumps({
+        "final_content": "# 最终标题\n\n最终正文内容 #标签",
+        "title_options": ["标题A", "标题B", "标题C"],
+    }, ensure_ascii=False)
+    provider = mock_provider(response)
+    agent = FinalPolisher(provider, prompt_dir="config/prompts")
+
+    state = PipelineState(
+        trend_markdown="test",
+        platforms=["xiaohongshu"],
+        drafts={"xiaohongshu": "# 初稿\n正文"},
+        review_feedback={"xiaohongshu": "需要改进"},
+        review_scores={"xiaohongshu": 88},
+    )
+    result = await agent.run(state)
+
+    assert "xiaohongshu" in result.final_content
+    assert "最终" in result.final_content["xiaohongshu"]
+    assert len(result.title_options["xiaohongshu"]) == 3
+    assert result.metrics.agents[-1].agent_name == "final_polisher"
