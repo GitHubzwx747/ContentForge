@@ -4,7 +4,7 @@ default_platforms:
 - wechat
 - douyin
 model_sources:
-- api_key: sk-3edaf085000c4a65bf4770519d86c930
+- api_key: sk-yy
   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
   is_active: true
   model_name: qwen-plus
