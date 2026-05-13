@@ -54,7 +54,10 @@ export default function Dashboard() {
   }
 
   const getPreview = (item) => {
-    return item.trend_markdown || ''
+    const text = (item.trend_markdown || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim()
+    const maxLen = 50
+    if (text.length <= maxLen) return text
+    return text.slice(0, maxLen) + '...'
   }
 
   const getAvgScore = (item) => {
@@ -83,7 +86,7 @@ export default function Dashboard() {
   const statCards = [
     { label: '总生成次数', value: stats?.total_generations ?? 0, unit: '次' },
     { label: '总消耗 Token', value: stats?.total_tokens ?? 0, unit: '' },
-    { label: '平均耗时', value: stats?.avg_duration ? (stats.avg_duration / 1000).toFixed(1) : '0', unit: 's' },
+    { label: '平均耗时', value: stats?.avg_duration ? stats.avg_duration.toFixed(1) : '0', unit: 's' },
     { label: '平均评分', value: stats?.avg_score ?? '-', unit: '' },
   ]
 
@@ -97,7 +100,7 @@ export default function Dashboard() {
       {error && <div className="error-banner animate-in">{error}</div>}
 
       <div className="stats-row">
-        {statCards.map((s, i) => (
+        {statCards.map((s) => (
           <div key={s.label} className="card stat-card">
             <div className="stat-value">
               {s.value}

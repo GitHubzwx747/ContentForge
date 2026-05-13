@@ -13,7 +13,17 @@ async function request(url, options = {}) {
 }
 
 export const api = {
-  generate: (text, platforms) => request('/generate', { method: 'POST', body: JSON.stringify({ text, platforms }) }),
+  generate: (text, platforms, config) => request('/generate', {
+    method: 'POST',
+    body: JSON.stringify({
+      text,
+      platforms,
+      ...(config && {
+        score_threshold: config.scoreThreshold,
+        max_cycles: config.maxCycles,
+      }),
+    }),
+  }),
   getHistory: (limit = 20) => request(`/history?limit=${limit}`),
   getGeneration: (id) => request(`/history/${id}`),
   getStats: () => request('/stats'),
@@ -23,4 +33,7 @@ export const api = {
   deleteModel: (name) => request(`/models/${name}`, { method: 'DELETE' }),
   getPlatforms: () => request('/platforms'),
   getConfig: () => request('/config'),
+  getPrompts: () => request('/prompts'),
+  getPrompt: (name) => request(`/prompts/${name}`),
+  updatePrompt: (name, content) => request(`/prompts/${name}`, { method: 'PUT', body: JSON.stringify({ content }) }),
 }

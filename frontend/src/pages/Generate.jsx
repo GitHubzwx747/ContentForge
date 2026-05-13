@@ -1,8 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { api } from '../api/client'
+import { useGenerate } from '../context/GenerateContext'
 import PipelineVisualizer from '../components/PipelineVisualizer'
 import PlatformTabs from '../components/PlatformTabs'
 import ScoreBar from '../components/ScoreBar'
+import AgentPanel from '../components/AgentPanel'
 
 const PLATFORMS = [
   { key: 'xiaohongshu', label: '小红书' },
@@ -11,17 +13,15 @@ const PLATFORMS = [
 ]
 
 export default function Generate() {
-  const [text, setText] = useState('')
-  const [selected, setSelected] = useState(['xiaohongshu'])
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState(null)
-  const [error, setError] = useState(null)
-
-  const togglePlatform = useCallback((key) => {
-    setSelected((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-    )
-  }, [])
+  const {
+    text, setText,
+    selected, togglePlatform,
+    loading, setLoading,
+    result, setResult,
+    error, setError,
+    panelOpen, togglePanel,
+    pipelineConfig,
+  } = useGenerate()
 
   const handleGenerate = async () => {
     if (!text.trim() || !selected.length || loading) return
@@ -29,7 +29,7 @@ export default function Generate() {
     setResult(null)
     setLoading(true)
     try {
-      const res = await api.generate(text.trim(), selected)
+      const res = await api.generate(text.trim(), selected, pipelineConfig)
       setResult(res)
     } catch (err) {
       setError(err.message || '生成失败，请重试')
@@ -51,7 +51,7 @@ export default function Generate() {
   const agents = result?.metrics?.agents
 
   return (
-    <div>
+    <div className={panelOpen ? 'generate-with-panel' : ''}>
       <div className="page-header animate-in">
         <h1>生成文案</h1>
         <p>输入热点内容，AI 多智能体协作为你创作平台专属文案</p>
@@ -168,6 +168,16 @@ export default function Generate() {
           </PlatformTabs>
         </div>
       )}
+
+      <AgentPanel />
+
+      <button
+        className={`panel-toggle ${panelOpen ? 'panel-toggle--active' : ''}`}
+        onClick={togglePanel}
+        title={panelOpen ? '关闭面板' : '打开智能体面板'}
+      >
+        {panelOpen ? '\u2715' : '\u2630'}
+      </button>
     </div>
   )
 }

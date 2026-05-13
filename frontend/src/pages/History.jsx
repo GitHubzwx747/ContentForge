@@ -31,7 +31,8 @@ export default function History() {
   }, [])
 
   const handleSelect = async (item) => {
-    if (item.results || item.platforms) {
+    // Always fetch full detail to get agent_metrics
+    if (item.agent_metrics) {
       setSelected(item)
       return
     }
@@ -65,7 +66,7 @@ export default function History() {
   }
 
   const getPreview = (item) => {
-    return item.trend_markdown || ''
+    return (item.trend_markdown || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim()
   }
 
   const getAvgScore = (item) => {
@@ -129,7 +130,7 @@ export default function History() {
               <div className="history-card__footer">
                 <span>{item.total_tokens || item.tokens || 0} tokens</span>
                 <span>{item.total_duration || item.duration
-                  ? `${((item.total_duration || item.duration) / 1000).toFixed(1)}s`
+                  ? `${(item.total_duration || item.duration).toFixed(1)}s`
                   : ''}</span>
               </div>
             </div>
@@ -225,6 +226,71 @@ function DetailModal({ item, onClose }) {
             )}
           </div>
         )}
+
+        <AgentMetrics agentMetrics={item.agent_metrics} />
+      </div>
+    </div>
+  )
+}
+
+const AGENT_LABELS = {
+  trend_interpreter: { name: '趋势解读', icon: '📊' },
+  strategy_planner: { name: '策略规划', icon: '🎯' },
+  content_writer: { name: '内容创作', icon: '✍️' },
+  quality_reviewer: { name: '质量评审', icon: '🔍' },
+  final_polisher: { name: '最终润色', icon: '✨' },
+}
+
+function AgentMetrics({ agentMetrics }) {
+  if (!agentMetrics || !agentMetrics.length) return null
+
+  return (
+    <div className="agent-metrics">
+      <div className="result-block__label">智能体执行详情</div>
+      <div className="agent-metrics__table-wrap">
+        <table className="agent-metrics__table">
+          <thead>
+            <tr>
+              <th>智能体</th>
+              <th>状态</th>
+              <th>耗时</th>
+              <th>输入 Token</th>
+              <th>输出 Token</th>
+              <th>总 Token</th>
+            </tr>
+          </thead>
+          <tbody>
+            {agentMetrics.map((m, i) => {
+              const meta = AGENT_LABELS[m.agent_name] || { name: m.agent_name, icon: '🤖' }
+              const hasDuration = m.duration_seconds > 0
+              return (
+                <tr key={m.agent_name || i}>
+                  <td className="agent-metrics__name">
+                    <span className="agent-metrics__icon">{meta.icon}</span>
+                    {meta.name}
+                  </td>
+                  <td>
+                    <span className={`badge ${hasDuration ? 'badge-success' : 'badge-muted'}`}>
+                      {hasDuration ? '完成' : '跳过'}
+                    </span>
+                  </td>
+                  <td className="agent-metrics__num">
+                    {hasDuration ? `${m.duration_seconds.toFixed(2)}s` : '-'}
+                  </td>
+                  <td className="agent-metrics__num">
+                    {m.input_tokens > 0 ? m.input_tokens.toLocaleString() : '-'}
+                  </td>
+                  <td className="agent-metrics__num">
+                    {m.output_tokens > 0 ? m.output_tokens.toLocaleString() : '-'}
+                  </td>
+                  <td className="agent-metrics__num">
+                    {m.total_tokens > 0 ? m.total_tokens.toLocaleString() : '-'}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )

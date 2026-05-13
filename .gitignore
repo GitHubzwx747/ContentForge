@@ -6,9 +6,33 @@ dist/
 build/
 .eggs/
 *.db
+*.db-journal
+*.db-shm
+*.db-wal
 .env
 .venv/
 node_modules/
 frontend/dist/
 frontend/node_modules/
 .pytest_cache/
+# Added by code-review-graph
+.code-review-graph/
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+# Config with secrets
+config/config.yaml
+# Temporary files
+*.tmp
+*.log
+# Claude/Trae IDE
+.claude/
+.trae/
+.mcp.json
+CLAUDE.md
+# Drawings
+contentforge_langgraph.png
+draw_graph.py

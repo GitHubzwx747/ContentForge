@@ -20,6 +20,7 @@ from src.storage.models import (
 from src.platforms.profiles import PROFILES
 
 CONFIG_PATH = "config/config.yaml"
+PROMPTS_DIR = Path("config/prompts")
 
 db = Database()
 
@@ -47,6 +48,8 @@ app.add_middleware(
 class GenerateRequest(BaseModel):
     text: str
     platforms: list[str] = ["xiaohongshu", "wechat", "douyin"]
+    score_threshold: int | None = None
+    max_cycles: int | None = None
 
 
 class SwitchModelRequest(BaseModel):
@@ -59,6 +62,10 @@ class AddModelRequest(BaseModel):
     api_key: str
     model_name: str
     provider: str = "openai_compatible"
+
+
+class UpdatePromptRequest(BaseModel):
+    content: str
 
 
 # --- Helpers ---
@@ -83,8 +90,8 @@ async def generate(req: GenerateRequest):
     orch = LangGraphOrchestrator(
         provider,
         prompt_dir="config/prompts",
-        score_threshold=config.review.score_threshold,
-        max_cycles=config.review.max_cycles,
+        score_threshold=req.score_threshold or config.review.score_threshold,
+        max_cycles=req.max_cycles or config.review.max_cycles,
     )
 
     state = PipelineState(trend_markdown=req.text, platforms=req.platforms)
@@ -191,6 +198,31 @@ async def get_platforms():
 @app.get("/api/config")
 async def get_config_endpoint():
     return _get_config().model_dump()
+
+
+@app.get("/api/prompts")
+async def list_prompts():
+    prompts = []
+    for f in sorted(PROMPTS_DIR.glob("*.md")):
+        prompts.append({"name": f.stem, "content": f.read_text(encoding="utf-8")})
+    return prompts
+
+
+@app.get("/api/prompts/{name}")
+async def get_prompt(name: str):
+    path = PROMPTS_DIR / f"{name}.md"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Prompt not found: {name}")
+    return {"name": name, "content": path.read_text(encoding="utf-8")}
+
+
+@app.put("/api/prompts/{name}")
+async def update_prompt(name: str, req: UpdatePromptRequest):
+    path = PROMPTS_DIR / f"{name}.md"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Prompt not found: {name}")
+    path.write_text(req.content, encoding="utf-8")
+    return {"message": f"Updated prompt: {name}"}
 
 
 # Mount static files LAST so API routes take priority

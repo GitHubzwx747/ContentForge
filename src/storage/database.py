@@ -140,4 +140,22 @@ class Database:
         )
         row = await cursor.fetchone()
         columns = [d[0] for d in cursor.description]
-        return dict(zip(columns, row))
+        stats = dict(zip(columns, row))
+
+        # Compute avg_score from JSON review_scores
+        cursor2 = await self._db.execute(
+            "SELECT review_scores FROM generation_history WHERE review_scores IS NOT NULL"
+        )
+        rows = await cursor2.fetchall()
+        all_scores = []
+        for (rs,) in rows:
+            if not rs:
+                continue
+            try:
+                scores = json.loads(rs) if isinstance(rs, str) else rs
+                if isinstance(scores, dict):
+                    all_scores.extend(v for v in scores.values() if isinstance(v, (int, float)))
+            except (json.JSONDecodeError, TypeError):
+                pass
+        stats["avg_score"] = round(sum(all_scores) / len(all_scores)) if all_scores else 0
+        return stats
